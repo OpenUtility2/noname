@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Properties Editor — MCTools</title>
+  <meta name="description" content="Edit and validate your Minecraft server.properties file.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/server-properties.css">
+  <style>
+    /* Dark Cyan / Slate Theme Override */
+    :root {
+      --mc-bg: #0c1017;
+      --mc-panel-bg: #121824;
+      --mc-panel-header: #182030;
+      --mc-accent: #00ffaa;
+      --mc-accent-hover: #00cc88;
+      --mc-border: #1e293b;
+      --mc-text: #f8fafc;
+      --mc-subtext: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--mc-bg);
+      color: var(--mc-text);
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Starfall Canvas Background */
+    #star-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header, main, footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    h1, h2, h3, h4, .logo, .tool-panel-title {
+      font-family: 'Press Start 2P', monospace;
+      letter-spacing: -0.5px;
+    }
+
+    .site-header {
+      background: rgba(12, 16, 23, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 2px solid var(--mc-accent);
+      box-shadow: 0 4px 20px rgba(0, 255, 170, 0.15);
+    }
+
+    .logo {
+      color: var(--mc-accent) !important;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .site-logo {
+      height: 32px;
+      width: auto;
+      vertical-align: middle;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--mc-subtext);
+      margin-bottom: 0.75rem;
+    }
+
+    .breadcrumb a {
+      color: var(--mc-text);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--mc-accent);
+    }
+
+    .tool-page-header h1 {
+      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+      margin-bottom: 0.75rem;
+      color: var(--mc-text);
+    }
+
+    .tool-page-header p {
+      color: var(--mc-subtext);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .tool-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .tool-tab {
+      background: var(--mc-panel-bg);
+      border: 1px solid var(--mc-border);
+      color: var(--mc-subtext);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.7rem;
+      padding: 10px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .tool-tab.active, .tool-tab:hover {
+      background: var(--mc-accent);
+      border-color: var(--mc-accent);
+      color: #0c1017;
+      font-weight: bold;
+    }
+
+    .tool-panel {
+      background-color: var(--mc-panel-bg);
+      border: 1px solid var(--mc-border);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .tool-panel-title {
+      font-size: 0.85rem;
+      color: var(--mc-accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-textarea {
+      width: 100%;
+      background: var(--mc-bg);
+      border: 1px solid var(--mc-border);
+      border-radius: 6px;
+      color: var(--mc-text);
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem;
+      padding: 12px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-textarea:focus {
+      border-color: var(--mc-accent);
+      box-shadow: 0 0 8px rgba(0, 255, 170, 0.2);
+    }
+
+    .upload-zone {
+      background: var(--mc-bg);
+      border: 2px dashed var(--mc-border);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--mc-accent);
+    }
+
+    .upload-zone i {
+      font-size: 2.5rem;
+      color: var(--mc-accent);
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      color: var(--mc-subtext);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: var(--mc-bg);
+      border: 1px solid var(--mc-border);
+      border-radius: 4px;
+      color: var(--mc-text);
+      padding: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--mc-accent);
+      box-shadow: 0 0 8px rgba(0, 255, 170, 0.2);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--mc-border);
+      font-size: 0.9rem;
+    }
+
+    .info-label {
+      color: var(--mc-subtext);
+      font-family: monospace;
+    }
+
+    .info-value.unknown {
+      color: #ffb74d;
+      font-family: monospace;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--mc-subtext);
+      padding: 20px 0;
+    }
+
+    .btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      border-radius: 4px;
+      border: 2px solid var(--mc-accent);
+      padding: 10px 14px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--mc-accent);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(0, 255, 170, 0.1);
+      box-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+    }
+
+    .code-output {
+      background: var(--mc-bg);
+      border: 1px solid var(--mc-border);
+      border-radius: 6px;
+      padding: 16px;
+      font-family: 'VT323', monospace;
+      font-size: 1.25rem;
+      color: var(--mc-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Footer Styling */
+    .site-footer {
+      background-color: #080b10;
+      border-top: 1px solid var(--mc-border);
+      color: var(--mc-subtext);
+      padding: 3rem 1rem 2rem 1rem;
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      margin-top: 4rem;
+    }
+
+    .footer-container {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .footer-title {
+      font-size: 1.5rem;
+      color: var(--mc-accent);
+      margin: 0;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-socials {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.2rem;
+      margin: 0.5rem 0;
+    }
+
+    .footer-socials a {
+      color: #ffffff;
+      background: var(--mc-panel-bg);
+      border: 1px solid var(--mc-border);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .footer-socials a:hover {
+      background: var(--mc-accent);
+      color: #0c1017;
+      border-color: var(--mc-accent);
+    }
+
+    .footer-nav-inline {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.8rem;
+      color: var(--mc-subtext);
+    }
+
+    .footer-nav-inline a {
+      color: var(--mc-text);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .footer-nav-inline a:hover {
+      color: var(--mc-accent);
+    }
+
+    .footer-nav-inline .dot {
+      color: var(--mc-subtext);
+    }
+
+    .openutility-ad-box {
+      border: 1px solid var(--mc-border);
+      border-radius: 8px;
+      padding: 6px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      position: relative;
+      margin-top: 0.5rem;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .openutility-ad-box .ad-label {
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #080b10;
+      padding: 0 6px;
+      color: var(--mc-subtext);
+      font-size: 0.55rem;
+      white-space: nowrap;
+    }
+
+    .openutility-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #ffffff;
+      font-family: sans-serif;
+      font-weight: bold;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    .openutility-icon {
+      background: var(--mc-accent);
+      color: #0c1017;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+    }
+
+    .footer-disclaimer {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      color: var(--mc-subtext);
+      line-height: 1.8;
+      max-width: 650px;
+      margin-top: 1rem;
+    }
+  </style>
+<link rel="stylesheet" href="/assets/css/mctools-enhancements.css">
+</head>
+<body><div style="position:fixed;right:12px;top:12px;z-index:9999;display:flex;gap:5px"><button class="theme-button" data-theme-cycle>Theme: <span data-theme-current>ENDER</span></button><button class="perf-button" data-performance-toggle>Perf: <span data-perf-current>OFF</span></button></div>
+  <!-- Canvas background for Starfall effect -->
+  <canvas id="star-canvas"></canvas>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <img src="assets/images/logo.png" alt="MC Tools Logo" class="site-logo"> MC Tools
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#tools" class="active">Tools</a></li>
+          <li><a href="index.html#about">About</a></li>
+          <li><a href="https://github.com" target="_blank" rel="noopener" class="nav-cta"><i class="fab fa-github"></i> GitHub</a></li>
+        </ul>
+        <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </nav>
+    </div>
+    <div class="mobile-nav-menu">
+      <a href="index.html"><i class="fas fa-home"></i> Home</a>
+      <a href="index.html#tools"><i class="fas fa-tools"></i> Tools</a>
+      <a href="index.html#about"><i class="fas fa-info-circle"></i> About</a>
+      <a href="https://github.com" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="max-width: 900px; margin: 0 auto; padding: 0 16px;">
+      <div class="tool-page-header" style="margin-bottom: 24px;">
+        <div class="breadcrumb">
+          <a href="index.html"><i class="fas fa-home"></i> Home</a>
+          <span><i class="fas fa-chevron-right" style="font-size: 0.5rem; margin: 0 4px;"></i></span>
+          <span>Server Properties Editor</span>
+        </div>
+        <h1>Server Properties Editor</h1>
+        <p>Upload or paste your server.properties file, edit common settings, and download the modified file. All processing happens locally in your browser.</p>
+      </div>
+
+      <div class="tool-tabs">
+        <button class="tool-tab active" data-tab="paste"><i class="fas fa-paste"></i> Paste Contents</button>
+        <button class="tool-tab" data-tab="upload"><i class="fas fa-upload"></i> Upload File</button>
+      </div>
+
+      <div id="tab-paste" class="tab-content">
+        <div class="tool-panel" style="margin-bottom: 1.5rem;">
+          <div class="tool-panel-title"><i class="fas fa-code"></i> Raw Contents</div>
+          <textarea id="properties-raw" class="form-textarea" rows="8" placeholder="server-port=25565&#10;max-players=20&#10;motd=A Minecraft Server&#10;..."></textarea>
+        </div>
+      </div>
+
+      <div id="tab-upload" class="tab-content" style="display: none;">
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="properties-file" accept=".properties" style="display: none;">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p style="font-weight: 600; margin-bottom: 0.25rem;">Click to upload server.properties</p>
+          <p style="font-size: 0.85rem; color: var(--mc-subtext);">or drag and drop the file here</p>
+        </div>
+      </div>
+
+      <div id="properties-parsed" style="display: none;">
+        <div class="tool-layout" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+          <div class="tool-panel">
+            <div class="tool-panel-title"><i class="fas fa-list-check"></i> Common Settings</div>
+            <div id="known-settings"></div>
+          </div>
+          <div class="tool-panel">
+            <div class="tool-panel-title"><i class="fas fa-question-circle"></i> Unknown / Preserved Properties</div>
+            <div id="unknown-settings" class="properties-table-wrap"></div>
+          </div>
+        </div>
+
+        <div class="tool-panel" style="margin-bottom: 1.5rem;">
+          <div class="tool-panel-title"><i class="fas fa-file-export"></i> Generated Output</div>
+          <button class="btn btn-secondary" id="properties-copy"><i class="fas fa-copy"></i> Copy</button>
+          <button class="btn btn-secondary" id="properties-download"><i class="fas fa-download"></i> Download .properties</button>
+          <div class="code-output" id="properties-output"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <h2 class="footer-title">
+        <img src="assets/images/logo.png" alt="MC Tools Logo" class="site-logo"> MCTools
+      </h2>
+      
+      <div class="footer-socials">
+        <a href="https://discord.com" target="_blank" rel="noopener" aria-label="Discord"><i class="fab fa-discord"></i></a>
+        <a href="https://youtube.com" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+        <a href="https://reddit.com" target="_blank" rel="noopener" aria-label="Reddit"><i class="fab fa-reddit-alien"></i></a>
+        <a href="https://ko-fi.com" target="_blank" rel="noopener" aria-label="Ko-fi"><i class="fas fa-mug-hot"></i></a>
+        <a href="mailto:contact@openutility.org" aria-label="Email"><i class="fas fa-envelope"></i></a>
+      </div>
+
+      <div class="footer-nav-inline">
+        <span>&copy; 2026 MCTools</span>
+        <span class="dot">&bull;</span>
+        <a href="#">Privacy</a>
+        <span class="dot">&bull;</span>
+        <a href="#">Terms</a>
+      </div>
+
+      <div class="footer-nav-inline">
+        <a href="index.html#about">About</a>
+        <span class="dot">&bull;</span>
+        <div class="openutility-ad-box">
+          <span class="ad-label">ads powered by</span>
+          <a href="https://openutility.org" class="openutility-badge" target="_blank" rel="noopener">
+            <span class="openutility-icon">o</span> OpenUtility&reg;
+          </a>
+        </div>
+      </div>
+
+      <p class="footer-disclaimer">
+        Not an official Minecraft service. Not approved by or associated with Mojang or Microsoft.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Canvas Starfall Script -->
+  <script>
+    const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const stars = [];
+    const count = 45;
+
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        length: Math.random() * 25 + 10,
+        speed: Math.random() * 4 + 2,
+        opacity: Math.random() * 0.7 + 0.3,
+        color: Math.random() > 0.4 ? '#00ffaa' : '#ffffff'
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      stars.forEach(star => {
+        ctx.beginPath();
+        ctx.moveTo(star.x, star.y);
+        ctx.lineTo(star.x - star.length * 0.3, star.y + star.length);
+        ctx.strokeStyle = star.color;
+        ctx.globalAlpha = star.opacity;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        star.y += star.speed;
+        star.x -= star.speed * 0.3;
+
+        if (star.y > canvas.height || star.x < 0) {
+          star.y = -20;
+          star.x = Math.random() * (canvas.width + 100);
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    (function () {
+      const knownKeys = [
+        { key: "server-port", label: "Server Port", type: "number", min: 1, max: 65535 },
+        { key: "server-ip", label: "Server IP", type: "text" },
+        { key: "max-players", label: "Max Players", type: "number", min: 1, max: 10000 },
+        { key: "gamemode", label: "Gamemode", type: "select", options: ["survival", "creative", "adventure", "spectator"] },
+        { key: "difficulty", label: "Difficulty", type: "select", options: ["peaceful", "easy", "normal", "hard"] },
+        { key: "online-mode", label: "Online Mode", type: "select", options: ["true", "false"] },
+        { key: "white-list", label: "White List", type: "select", options: ["true", "false"] },
+        { key: "pvp", label: "PVP", type: "select", options: ["true", "false"] },
+        { key: "hardcore", label: "Hardcore", type: "select", options: ["true", "false"] },
+        { key: "allow-flight", label: "Allow Flight", type: "select", options: ["true", "false"] },
+        { key: "view-distance", label: "View Distance", type: "number", min: 2, max: 32 },
+        { key: "simulation-distance", label: "Simulation Distance", type: "number", min: 2, max: 32 },
+        { key: "motd", label: "MOTD", type: "text" },
+        { key: "level-seed", label: "Level Seed", type: "text" },
+        { key: "level-name", label: "Level Name", type: "text" },
+        { key: "enable-command-block", label: "Enable Command Block", type: "select", options: ["true", "false"] },
+        { key: "spawn-protection", label: "Spawn Protection", type: "number", min: 0, max: 100 },
+        { key: "max-build-height", label: "Max Build Height", type: "number", min: 1, max: 256 },
+        { key: "spawn-animals", label: "Spawn Animals", type: "select", options: ["true", "false"] },
+        { key: "spawn-monsters", label: "Spawn Monsters", type: "select", options: ["true", "false"] },
+        { key: "spawn-npcs", label: "Spawn NPCs", type: "select", options: ["true", "false"] },
+        { key: "generate-structures", label: "Generate Structures", type: "select", options: ["true", "false"] },
+        { key: "allow-nether", label: "Allow Nether", type: "select", options: ["true", "false"] },
+        { key: "enable-query", label: "Enable Query", type: "select", options: ["true", "false"] },
+        { key: "enable-rcon", label: "Enable RCON", type: "select", options: ["true", "false"] },
+        { key: "rcon.password", label: "RCON Password", type: "text" },
+        { key: "op-permission-level", label: "OP Permission Level", type: "number", min: 1, max: 4 },
+        { key: "function-permission-level", label: "Function Permission Level", type: "number", min: 1, max: 4 },
+        { key: "max-tick-time", label: "Max Tick Time (ms)", type: "number", min: 0 },
+        { key: "max-world-size", label: "Max World Size", type: "number", min: 1, max: 29999984 },
+      ];
+
+      const knownKeyMap = {};
+      knownKeys.forEach(k => knownKeyMap[k.key] = k);
+
+      let propertiesData = {};
+
+      function parseProperties(text) {
+        const result = {};
+        const lines = text.split(/\r?\n/);
+        lines.forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith("#")) return;
+          const eqIdx = line.indexOf("=");
+          if (eqIdx === -1) return;
+          const key = line.slice(0, eqIdx).trim();
+          const value = line.slice(eqIdx + 1).trim();
+          if (key) result[key] = value;
+        });
+        return result;
+      }
+
+      function serializeProperties(data) {
+        const lines = [];
+        for (const [key, value] of Object.entries(data)) {
+          lines.push(`${key}=${value}`);
+        }
+        return lines.join("\n");
+      }
+
+      function renderEditor() {
+        const knownContainer = document.getElementById("known-settings");
+        const unknownContainer = document.getElementById("unknown-settings");
+        knownContainer.innerHTML = "";
+        unknownContainer.innerHTML = "";
+
+        const knownKeysFound = [];
+        const unknownKeysFound = [];
+
+        Object.keys(propertiesData).forEach(key => {
+          if (knownKeyMap[key]) {
+            knownKeysFound.push(key);
+          } else {
+            unknownKeysFound.push(key);
+          }
+        });
+
+        knownKeys.forEach(def => {
+          const value = propertiesData[def.key] !== undefined ? propertiesData[def.key] : "";
+          const wrapper = document.createElement("div");
+          wrapper.className = "form-group";
+
+          const label = document.createElement("label");
+          label.textContent = def.label;
+          wrapper.appendChild(label);
+
+          let input;
+          if (def.type === "select") {
+            input = document.createElement("select");
+            input.className = "form-select";
+            def.options.forEach(opt => {
+              const option = document.createElement("option");
+              option.value = opt;
+              option.textContent = opt;
+              if (opt === value) option.selected = true;
+              input.appendChild(option);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = def.type;
+            input.className = "form-input";
+            input.value = value;
+            if (def.min !== undefined) input.min = def.min;
+            if (def.max !== undefined) input.max = def.max;
+          }
+
+          input.addEventListener("input", () => {
+            propertiesData[def.key] = input.value;
+            updateOutput();
+          });
+
+          wrapper.appendChild(input);
+          knownContainer.appendChild(wrapper);
+        });
+
+        if (unknownKeysFound.length === 0) {
+          unknownContainer.innerHTML = '<p class="empty-state">No unknown settings found.</p>';
+        } else {
+          unknownKeysFound.forEach(key => {
+            const row = document.createElement("div");
+            row.className = "info-row";
+            row.innerHTML = `<span class="info-label">${key}</span><span class="info-value unknown">${propertiesData[key]}</span>`;
+            unknownContainer.appendChild(row);
+          });
+        }
+
+        document.getElementById("properties-parsed").style.display = "block";
+        updateOutput();
+      }
+
+      function updateOutput() {
+        const output = serializeProperties(propertiesData);
+        document.getElementById("properties-output").textContent = output;
+      }
+
+      // Tab switching
+      document.querySelectorAll(".tool-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tool-tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+
+          const target = tab.dataset.tab;
+          document.getElementById("tab-paste").style.display = target === "paste" ? "block" : "none";
+          document.getElementById("tab-upload").style.display = target === "upload" ? "block" : "none";
+        });
+      });
+
+      // Raw Input Handler
+      const rawArea = document.getElementById("properties-raw");
+      rawArea.addEventListener("input", () => {
+        propertiesData = parseProperties(rawArea.value);
+        if (Object.keys(propertiesData).length > 0) {
+          renderEditor();
+        } else {
+          document.getElementById("properties-parsed").style.display = "none";
+        }
+      });
+
+      // File Upload Handler
+      const uploadZone = document.getElementById("upload-zone");
+      const fileInput = document.getElementById("properties-file");
+
+      uploadZone.addEventListener("click", () => fileInput.click());
+
+      uploadZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadZone.style.borderColor = "var(--mc-accent)";
+      });
+
+      uploadZone.addEventListener("dragleave", () => {
+        uploadZone.style.borderColor = "var(--mc-border)";
+      });
+
+      uploadZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadZone.style.borderColor = "var(--mc-border)";
+        if (e.dataTransfer.files.length > 0) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+          handleFile(fileInput.files[0]);
+        }
+      });
+
+      function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target.result;
+          rawArea.value = content;
+          propertiesData = parseProperties(content);
+          renderEditor();
+        };
+        reader.readAsText(file);
+      }
+
+      // Copy & Download Buttons
+      document.getElementById("properties-copy").addEventListener("click", () => {
+        const text = document.getElementById("properties-output").textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Copied to clipboard!");
+        });
+      });
+
+      document.getElementById("properties-download").addEventListener("click", () => {
+        const text = document.getElementById("properties-output").textContent;
+        const blob = new Blob([text], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "server.properties";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    })();
+  </script>
+<script src="/assets/js/mctools-enhancements.js"></script>
+</body>
+</html>
